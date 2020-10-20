@@ -15,10 +15,10 @@ class Node:
 		self.isleaf = 1
 		self.binary = ""
 
-def form(parent,first,second):
-	parent.left = first
-	parent.right = second
-	parent.isleaf = 0
+	def form(self,first,second):
+		self.left = first
+		self.right = second
+		self.isleaf = 0
 
 def set_binary(self):
 	if self.left:
@@ -47,14 +47,13 @@ def encode(input_file, output_file):
 			n = Node(i,frequency[i])
 			priority_queue.append(n) #Create nodes for all existing(count > 0) nodes to priority_queue
 	priority_queue.reverse()
-	global first
 	first = priority_queue.pop()
 	second = priority_queue.pop()
 	while 1:
 		parent = Node(first.char+second.char, first.count+second.count)
 		priority_queue.append(parent)	#add parent to priority_queue as well
 		priority_queue.sort(key=lambda priority_queue: priority_queue.count, reverse=True)
-		form(parent,first,second) #forms parent from first and second
+		parent.form(first,second) #forms parent from first and second
 		first = priority_queue.pop()
 		if not priority_queue:	#breaks when only one node is left
 			break
