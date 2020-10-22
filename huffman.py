@@ -31,10 +31,20 @@ def set_binary(self):
 			binary_code[self.right.char] = self.right.binary
 		set_binary(self.right)
 
-def encode(input_file, output_file):
+def write_encode_info(binary_code,output_file):
+	fs = open(output_file,'w+')
+	count = len(binary_code)*2+1
+	fs.write(str(count+1)) #separate encodeded information from encoded text
+	fs.write("\n")
+	for i in binary_code:
+		fs.write(binary_code[i])
+		fs.write("\n")
+		fs.write(i)
+		fs.write("\n")
+	fs.close()
+
+def get_frequency(input_file):
 	frequency= {}
-	binary_code_r = {}
-	priority_queue = []
 	with open(input_file) as f:
 		for line in f:
 			for word in line:
@@ -42,13 +52,17 @@ def encode(input_file, output_file):
 					frequency[word]=frequency[word]+1
 				else:
 					frequency[word] = 1
-	a = sorted(frequency.items(), key=lambda x: x[1])
-	frequency =OrderedDict(a)
+	return frequency
+
+def get_priority_queue(frequency):
+	priority_queue = []
 	for i in frequency:
 		if(frequency[i] > 0):
 			n = Node(i,frequency[i])
 			priority_queue.append(n) #Create nodes for all existing(count > 0) nodes to priority_queue
-	priority_queue.reverse()
+	return priority_queue
+
+def form_tree(priority_queue):
 	first = priority_queue.pop()
 	second = priority_queue.pop()
 	while 1:
@@ -60,20 +74,9 @@ def encode(input_file, output_file):
 		if not priority_queue:	#breaks when only one node is left
 			break
 		second = priority_queue.pop()
+	return first
 
-	set_binary(first)
-	for i in binary_code:
-		binary_code_r[binary_code[i]] = i #reverse of binary_code for decrypt purpose
-	fs = open(output_file,'w+')
-	count = len(binary_code_r)*2+1
-	fs.write(str(count+1)) #separate encodeded information from encoded text
-	fs.write("\n")
-	for i in binary_code_r:
-		fs.write(i)
-		fs.write("\n")
-		fs.write(binary_code_r[i])
-		fs.write("\n")
-	fs.close()
+def append_encoded_content(input_file,output_file,binary_code):
 	fo = open(output_file,'a+')
 	with open(input_file) as f:
 		for line in f:
@@ -81,7 +84,33 @@ def encode(input_file, output_file):
 				fo.write(binary_code[word])	#write the encoded value of each character
 	fo.close()
 
-def decode(input_file, output_file):
+def encode(input_file, output_file):
+	frequency = get_frequency(input_file)
+	a = sorted(frequency.items(), key=lambda x: x[1])
+	frequency =OrderedDict(a)
+	priority_queue = get_priority_queue(frequency)
+	priority_queue.reverse()
+	root = form_tree(priority_queue)
+	set_binary(root)
+	write_encode_info(binary_code,output_file)
+	append_encoded_content(input_file,output_file,binary_code)
+
+def write_output(input_file,output_file,binary_decode,margin):
+	fo = open(output_file,'w+')
+	current_word = ""
+	itr = 0
+	with open(input_file,'r') as f:
+		for line in f:
+			if (itr > margin-1):
+				for word in line:
+					current_word = current_word+word	#incremental read and addition of updating current_word
+					if current_word in binary_decode.keys():	#check if current_word is in binary keys
+						fo.write(binary_decode[current_word])	#write the decoded character
+						current_word = ""	#start looking for next match
+			itr+=1
+	fo.close()
+
+def get_decode_info(input_file):
 	file1 = open(input_file, 'r')
 	Lines = file1.readlines()
 	decoders = []
@@ -103,19 +132,11 @@ def decode(input_file, output_file):
 			itr+=1
 		else:
 			break
-	fo = open(output_file,'w+')
-	current_word = ""
-	itr = 0
-	with open(input_file,'r') as f:
-		for line in f:
-			if (itr > margin-1):
-				for word in line:
-					current_word = current_word+word	#incremental read and addition of updating current_word
-					if current_word in binary_decode.keys():	#check if current_word is in binary keys
-						fo.write(binary_decode[current_word])	#write the decoded character
-						current_word = ""	#start looking for next match
-			itr+=1
-	fo.close()
+	return margin,binary_decode
+
+def decode(input_file, output_file):
+	margin,binary_decode = get_decode_info(input_file)
+	write_output(input_file,output_file,binary_decode,margin)
 
 def get_options(args=sys.argv[1:]):
 	parser = argparse.ArgumentParser(description="Huffman compression.")
@@ -125,7 +146,6 @@ def get_options(args=sys.argv[1:]):
 	parser.add_argument("-o", type=str, help="Write encoded/decoded file", required=True)
 	options = parser.parse_args()
 	return options
-
 
 if __name__ == "__main__":
 	options = get_options()
